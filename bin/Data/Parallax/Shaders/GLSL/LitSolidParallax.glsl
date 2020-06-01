@@ -127,8 +127,10 @@ void PS()
             #endif
 
             texCoord = plxCoords;
+            tbn = mat3(vTangent.xyz, -vec3(vTexCoord.zw, vTangent.w), vNormal);
             vec3 normal = normalize(tbn * DecodeNormal(texture2D(sNormalMap, texCoord)));
         #else
+            tbn = mat3(vTangent.xyz, -vec3(vTexCoord.zw, vTangent.w), vNormal);
         vec3 normal = normalize(tbn * DecodeNormal(texture2D(sNormalMap, texCoord)));
         #endif
     #else

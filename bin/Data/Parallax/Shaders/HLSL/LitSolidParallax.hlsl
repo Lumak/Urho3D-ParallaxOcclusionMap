@@ -202,8 +202,10 @@ void PS(
             #endif
 
             texCoord = plxCoords;
+            tbn = float3x3(iTangent.xyz, -float3(iTexCoord.zw, iTangent.w), iNormal);
             float3 normal = normalize(mul(DecodeNormal(Sample2D(NormalMap, texCoord)), tbn));
         #else
+            tbn = float3x3(iTangent.xyz, -float3(iTexCoord.zw, iTangent.w), iNormal);
             float3 normal = normalize(mul(DecodeNormal(Sample2D(NormalMap, iTexCoord.xy)), tbn));
         #endif
     #else

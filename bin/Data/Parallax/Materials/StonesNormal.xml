@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <material>
-	<technique name="Techniques/DiffNormal.xml" />
+	<technique name="Techniques/DiffParallaxNormal.xml" />
 	<texture unit="diffuse" name="Textures/stones.png" />
 	<texture unit="normal" name="Textures/stones_normal.png" />
 	<cull value="none" />
