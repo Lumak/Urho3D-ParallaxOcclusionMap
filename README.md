@@ -11,6 +11,7 @@ Parallax Occlusion Mapping for Urho3D
 ### Screenshot
 
 ![alt tag](https://github.com/Lumak/Urho3D-ParallaxOcclusionMap/blob/master/screenshot/Screenshot.png)
+![alt tag](https://github.com/Lumak/Urho3D-ParallaxOcclusionMap/blob/master/screenshot/Screenshot2.png)
 
 ---
 ### To Build
