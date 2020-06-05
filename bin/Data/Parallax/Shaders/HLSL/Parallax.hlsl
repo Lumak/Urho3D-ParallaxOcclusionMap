@@ -35,7 +35,7 @@ float2 ParallaxOcclusionMapping(sampler2D depthMap, float2 texCoords, float3 vie
        
     // The length of this vector determines the furthest amount of displacement:
     float fLength         = length(viewDir);
-    float fParallaxLength = sqrt(fLength * fLength - viewDir.z * viewDir.z) / viewDir.z; 
+    float fParallaxLength = sqrt(fLength * fLength - viewDir.z * viewDir.z) / abs(viewDir.z);
        
     // Compute the actual reverse parallax displacement vector:
     float2 vParallaxOffsetTS = vParallaxDirection * fParallaxLength;
@@ -44,7 +44,7 @@ float2 ParallaxOcclusionMapping(sampler2D depthMap, float2 texCoords, float3 vie
     // in height maps. This is controlled by an artist-editable parameter:
     vParallaxOffsetTS *= cHeightScale;
 
-    int nNumSteps = (int) lerp(maxLayers, minLayers, abs(VdotN));
+    int nNumSteps = (int)lerp(maxLayers, minLayers, abs(VdotN));
     float fCurrHeight = 0.0;
     float fStepSize   = 1.0 / (float) nNumSteps;
     float fPrevHeight = 1.0;
@@ -94,16 +94,16 @@ float2 ParallaxOcclusionMapping(sampler2D depthMap, float2 texCoords, float3 vie
     
     // SM 3.0 requires a check for divide by zero, since that operation will generate
     // an 'Inf' number instead of 0, as previous models (conveniently) did:
-    if ( fDenominator == 0.0f )
+    if ( fDenominator == 0.0 )
     {
-       fParallaxAmount = 0.0f;
+       fParallaxAmount = 0.0;
     }
     else
     {
        fParallaxAmount = (pt1.x * fDelta2 - pt2.x * fDelta1 ) / fDenominator;
     }
     
-    float2 vParallaxOffset = vParallaxOffsetTS * (1.0 - fParallaxAmount );
+    float2 vParallaxOffset = vParallaxOffsetTS * (1.0 - fParallaxAmount);
 
     // The computed texture offset for the displaced point on the pseudo-extruded surface:
     return (texCoords - vParallaxOffset);

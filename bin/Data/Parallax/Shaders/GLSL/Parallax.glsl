@@ -7,7 +7,11 @@
 #ifdef NORMALMAP
 #error PARALLAXMAP and NORMALMAP must be exclusive
 #endif
-
+#ifdef MOBILE_GRAPHICS
+    precision mediump float;
+#else
+    precision highp float;
+#endif
 // height scale
 #ifndef cHeightScale
 uniform float cHeightScale;
@@ -27,15 +31,15 @@ vec2 ParallaxOffsetLimit(sampler2D depthMap, vec2 texCoords, vec3 viewDir)
 #ifdef PARALLAX_OCCLUSION
 vec2 ParallaxOcclusionMapping(sampler2D depthMap, vec2 texCoords, vec3 viewDir, float VdotN)
 {
-    const float minLayers = 8;
-    const float maxLayers = 36;
+    float minLayers = 8;
+    float maxLayers = 36;
 
     // the amount to shift the texture coordinates per layer (from vector P)
     vec2 vParallaxDirection = normalize(viewDir.xy);
        
     // The length of this vector determines the furthest amount of displacement:
     float fLength         = length(viewDir);
-    float fParallaxLength = sqrt(fLength * fLength - viewDir.z * viewDir.z) / viewDir.z; 
+    float fParallaxLength = sqrt(fLength * fLength - viewDir.z * viewDir.z) / abs(viewDir.z); 
        
     // Compute the actual reverse parallax displacement vector:
     vec2 vParallaxOffsetTS = vParallaxDirection * fParallaxLength;
@@ -51,8 +55,6 @@ vec2 ParallaxOcclusionMapping(sampler2D depthMap, vec2 texCoords, vec3 viewDir, 
     float fNextHeight = 0.0;
 
     int   nStepIndex = 0;
-    bool  bCondition = true;
-
     vec2 vTexOffsetPerStep = fStepSize * vParallaxOffsetTS;
     vec2 vTexCurrentOffset = texCoords;
     float fCurrentBound    = 1.0;
@@ -96,9 +98,9 @@ vec2 ParallaxOcclusionMapping(sampler2D depthMap, vec2 texCoords, vec3 viewDir, 
     
     // SM 3.0 requires a check for divide by zero, since that operation will generate
     // an 'Inf' number instead of 0, as previous models (conveniently) did:
-    if ( fDenominator == 0.0f )
+    if ( fDenominator == 0.0 )
     {
-       fParallaxAmount = 0.0f;
+       fParallaxAmount = 0.0;
     }
     else
     {

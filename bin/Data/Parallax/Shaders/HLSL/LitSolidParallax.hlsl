@@ -193,12 +193,12 @@ void PS(
 
             #ifdef PARALLAX_OFFSET
             float3 viewDir = mul(tbn, normalize(viewDirWS));
-            float2 plxCoords = ParallaxOffsetLimit(sSpecMap, iTexCoord.xy, viewDir);
+            float2 plxCoords = ParallaxOffsetLimit(sSpecMap, texCoord.xy, viewDir);
             #endif
             #ifdef PARALLAX_OCCLUSION
             float VdotN = dot(normalize(viewDirWS), iNormal);
             float3 viewDir = mul(tbn, viewDirWS);
-            float2 plxCoords = ParallaxOcclusionMapping(sSpecMap, iTexCoord.xy, viewDir, VdotN);
+            float2 plxCoords = ParallaxOcclusionMapping(sSpecMap, texCoord.xy, viewDir, VdotN);
             #endif
 
             texCoord = plxCoords;
@@ -206,7 +206,7 @@ void PS(
             float3 normal = normalize(mul(DecodeNormal(Sample2D(NormalMap, texCoord)), tbn));
         #else
             tbn = float3x3(iTangent.xyz, -float3(iTexCoord.zw, iTangent.w), iNormal);
-            float3 normal = normalize(mul(DecodeNormal(Sample2D(NormalMap, iTexCoord.xy)), tbn));
+            float3 normal = normalize(mul(DecodeNormal(Sample2D(NormalMap, texCoord.xy)), tbn));
         #endif
     #else
         float3 normal = normalize(iNormal);

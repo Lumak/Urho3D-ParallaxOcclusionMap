@@ -2,6 +2,6 @@
 <material>
 	<technique name="Techniques/DiffParallaxNormal.xml" />
 	<texture unit="diffuse" name="Textures/wall.jpg" />
-	<texture unit="normal" name="Textures/wall_normal.png" />
+	<texture unit="normal" name="Textures/saint_normal.png" />
 	<cull value="none" />
 </material>
