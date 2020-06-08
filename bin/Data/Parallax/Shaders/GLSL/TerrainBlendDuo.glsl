@@ -4,19 +4,19 @@
 #include "ScreenPos.glsl"
 #include "Lighting.glsl"
 #include "Fog.glsl"
-#include "Parallax.glsl"
 
-#if defined(NORMALMAP) || defined(PARALLAXMAP)
-    varying vec4 vTexCoord;
-    varying vec4 vTangent;
+varying vec2 vTexCoord;
+
+#ifndef GL_ES
+varying vec2 vDetailTexCoord;
 #else
-    varying vec2 vTexCoord;
+varying mediump vec2 vDetailTexCoord;
 #endif
+
 varying vec3 vNormal;
+varying vec3 vTangent;
+varying vec3 vBitangent;
 varying vec4 vWorldPos;
-#ifdef VERTEXCOLOR
-    varying vec4 vColor;
-#endif
 #ifdef PERPIXEL
     #ifdef SHADOW
         #ifndef GL_ES
@@ -42,6 +42,107 @@ varying vec4 vWorldPos;
     #endif
 #endif
 
+uniform sampler2D sWeightMap0;
+uniform sampler2D sDetailMap1;
+uniform sampler2D sDetailMap2;
+uniform sampler2D sDetailMap3;
+uniform sampler2D sDetailMap4;
+uniform float cHeightScale;
+
+#ifndef GL_ES
+uniform vec2 cDetailTiling;
+#else
+uniform mediump vec2 cDetailTiling;
+#endif
+
+
+vec2 ParallaxOcclusionMapping(vec2 weights, vec2 texCoords, vec3 viewDir, float VdotN)
+{
+    float minLayers = 8.0;
+    float maxLayers = 36.0;
+
+    // the amount to shift the texture coordinates per layer (from vector P)
+    vec2 vParallaxDirection = normalize(viewDir.xy);
+       
+    // The length of this vector determines the furthest amount of displacement:
+    float fLength         = length(viewDir);
+    float fParallaxLength = sqrt(fLength * fLength - viewDir.z * viewDir.z) / abs(viewDir.z); 
+       
+    // Compute the actual reverse parallax displacement vector:
+    vec2 vParallaxOffsetTS = vParallaxDirection * fParallaxLength;
+       
+    // Need to scale the amount of displacement to account for different height ranges
+    // in height maps. This is controlled by an artist-editable parameter:
+    vParallaxOffsetTS *= cHeightScale;
+
+    int nNumSteps = int(mix(maxLayers, minLayers, abs(VdotN)));
+    float fCurrHeight = 0.0;
+    float fStepSize   = 1.0 / float(nNumSteps);
+    float fPrevHeight = 1.0;
+    float fNextHeight = 0.0;
+
+    int   nStepIndex = 0;
+    bool  bCondition = true;
+
+    vec2 vTexOffsetPerStep = fStepSize * vParallaxOffsetTS;
+    vec2 vTexCurrentOffset = texCoords;
+    float fCurrentBound    = 1.0;
+    float fParallaxAmount  = 0.0;
+
+    vec2 pt1 = vec2(0);
+    vec2 pt2 = vec2(0);
+     
+    vec2 texOffset2 = vec2(0);
+
+    while ( nStepIndex < nNumSteps ) 
+    {
+       vTexCurrentOffset -= vTexOffsetPerStep;
+
+       // Sample height map
+       fCurrHeight = weights.x * texture2D(sDetailMap1, vTexCurrentOffset).a +
+                     weights.y * texture2D(sDetailMap2, vTexCurrentOffset).a;
+
+       fCurrentBound -= fStepSize;
+
+       if ( fCurrHeight > fCurrentBound ) 
+       {   
+          pt1 = vec2( fCurrentBound, fCurrHeight );
+          pt2 = vec2( fCurrentBound + fStepSize, fPrevHeight );
+
+          texOffset2 = vTexCurrentOffset - vTexOffsetPerStep;
+
+          nStepIndex = nNumSteps + 1;
+          fPrevHeight = fCurrHeight;
+       }
+       else
+       {
+          nStepIndex++;
+          fPrevHeight = fCurrHeight;
+       }
+    }   
+
+    float fDelta2 = pt2.x - pt2.y;
+    float fDelta1 = pt1.x - pt1.y;
+    
+    float fDenominator = fDelta2 - fDelta1;
+    
+    // SM 3.0 requires a check for divide by zero, since that operation will generate
+    // an 'Inf' number instead of 0, as previous models (conveniently) did:
+    if ( fDenominator == 0.0 )
+    {
+       fParallaxAmount = 0.0;
+    }
+    else
+    {
+       fParallaxAmount = (pt1.x * fDelta2 - pt2.x * fDelta1 ) / fDenominator;
+    }
+    
+    vec2 vParallaxOffset = vParallaxOffsetTS * (1.0 - fParallaxAmount);
+
+    // The computed texture offset for the displaced point on the pseudo-extruded surface:
+    return (texCoords - vParallaxOffset);
+}
+
 void VS()
 {
     mat4 modelMatrix = iModelMatrix;
@@ -49,21 +150,8 @@ void VS()
     gl_Position = GetClipPos(worldPos);
     vNormal = GetWorldNormal(modelMatrix);
     vWorldPos = vec4(worldPos, GetDepth(gl_Position));
-
-    #ifdef VERTEXCOLOR
-        vColor = iColor;
-    #endif
-
-    #if defined(NORMALMAP) || defined(PARALLAXMAP)
-        vec4 tangent = GetWorldTangent(modelMatrix);
-        // bitangent calculation changed to bitangent = cross(normal, tangent) based on:
-        // https://www.gamasutra.com/blogs/RobertBasler/20131122/205462/Three_Normal_Mapping_Techniques_Explained_For_the_Mathematically_Uninclined.php?print=1
-        vec3 bitangent = normalize(cross(vNormal, tangent.xyz)) * tangent.w;
-        vTexCoord = vec4(GetTexCoord(iTexCoord), bitangent.xy);
-        vTangent = vec4(tangent.xyz, bitangent.z);
-    #else
-        vTexCoord = GetTexCoord(iTexCoord);
-    #endif
+    vTexCoord = GetTexCoord(iTexCoord);
+    vDetailTexCoord = cDetailTiling * vTexCoord;
 
     #ifdef PERPIXEL
         // Per-pixel forward lighting
@@ -105,63 +193,37 @@ void VS()
             vReflectionVec = worldPos - cCameraPos;
         #endif
     #endif
+
+    vec4 tangent = GetWorldTangent(modelMatrix);
+    vBitangent = normalize(cross(vNormal, tangent.xyz)) * tangent.w;
+    vTangent = tangent.xyz;
+
 }
 
 void PS()
 {
-    // pre-assign texCoord but will be modified by below parallax routine
-    vec2 texCoord = vTexCoord.xy;
-
-    // Get normal
-    #if defined(NORMALMAP) || defined(PARALLAXMAP)
-        vec3 bitangent = vec3(vTexCoord.zw, vTangent.w);
-        #ifdef PARALLAXMAP
-            mat3 tbn = transpose(mat3(vTangent.xyz, bitangent, vNormal));
-            vec3 viewDirWS = cCameraPosPS.xyz - vWorldPos.xyz;
-
-            #ifdef PARALLAX_OFFSET
-            vec3 viewDir = tbn * normalize(viewDirWS);
-            vec2 plxCoords = ParallaxOffsetLimit(sSpecMap, vTexCoord.xy, viewDir);
-            #endif
-            #ifdef PARALLAX_OCCLUSION
-            float VdotN = dot(normalize(viewDirWS), vNormal);
-            vec3 viewDir = tbn * viewDirWS;
-            vec2 plxCoords = ParallaxOcclusionMapping(sSpecMap, vTexCoord.xy, viewDir, VdotN);
-            #endif
-
-            texCoord = plxCoords;
-            tbn = mat3(vTangent.xyz, -bitangent, vNormal);
-            vec3 normal = normalize(tbn * DecodeNormal(texture2D(sNormalMap, texCoord)));
-        #else
-            mat3 tbn = mat3(vTangent.xyz, -bitangent, vNormal);
-            vec3 normal = normalize(tbn * DecodeNormal(texture2D(sNormalMap, texCoord)));
-        #endif
-    #else
-        vec3 normal = normalize(vNormal);
-    #endif
-
     // Get material diffuse albedo
-    #ifdef DIFFMAP
-        vec4 diffInput = texture2D(sDiffMap, texCoord);
-        #ifdef ALPHAMASK
-            if (diffInput.a < 0.5)
-                discard;
-        #endif
-        vec4 diffColor = cMatDiffColor * diffInput;
-    #else
-        vec4 diffColor = cMatDiffColor;
-    #endif
+    vec3 weights = texture2D(sWeightMap0, vTexCoord).rgb;
+    float sumWeights = weights.r + weights.g;
+    weights /= sumWeights;
 
-    #ifdef VERTEXCOLOR
-        diffColor *= vColor;
-    #endif
+    // parallax
+    vec2 detailTexCoord = vDetailTexCoord;
+    mat3 tbn = transpose(mat3(vTangent, vBitangent, vNormal));
+    vec3 viewDirWS = cCameraPosPS.xyz - vWorldPos.xyz;
+    float VdotN = dot(normalize(viewDirWS), vNormal);
+    vec3 viewDir = tbn * viewDirWS;
+    detailTexCoord = ParallaxOcclusionMapping(vec2(weights.r, weights.g), detailTexCoord, viewDir, VdotN);
+    tbn = mat3(vTangent, -vBitangent, vNormal);
+    vec3 normal = weights.r * (tbn * DecodeNormal(texture2D(sDetailMap3, detailTexCoord))) +
+                  weights.g * (tbn * DecodeNormal(texture2D(sDetailMap4, detailTexCoord)));
+         normal = normalize(normal);
     
+    vec4 diffColor = cMatDiffColor * vec4(weights.r * texture2D(sDetailMap1, detailTexCoord).rgb +
+                                          weights.g * texture2D(sDetailMap2, detailTexCoord).rgb, 1);
+
     // Get material specular albedo
-    #ifdef SPECMAP
-        vec3 specColor = cMatSpecColor.rgb * texture2D(sSpecMap, texCoord).rgb;
-    #else
-        vec3 specColor = cMatSpecColor.rgb;
-    #endif
+    vec3 specColor = cMatSpecColor.rgb;
 
     // Get fog factor
     #ifdef HEIGHTFOG
@@ -175,7 +237,7 @@ void PS()
         vec3 lightColor;
         vec3 lightDir;
         vec3 finalColor;
-
+        
         float diff = GetDiffuse(normal, vWorldPos.xyz, lightDir);
 
         #ifdef SHADOW
@@ -215,36 +277,14 @@ void PS()
         float specIntensity = specColor.g;
         float specPower = cMatSpecColor.a / 255.0;
 
-        vec3 finalColor = vVertexLight * diffColor.rgb;
-        #ifdef AO
-            // If using AO, the vertex light ambient is black, calculate occluded ambient here
-            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * cAmbientColor.rgb * diffColor.rgb;
-        #endif
-
-        #ifdef ENVCUBEMAP
-            finalColor += cMatEnvMapColor * textureCube(sEnvCubeMap, reflect(vReflectionVec, normal)).rgb;
-        #endif
-        #ifdef LIGHTMAP
-            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
-        #endif
-        #ifdef EMISSIVEMAP
-            finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
-        #else
-            finalColor += cMatEmissiveColor;
-        #endif
-
-        gl_FragData[0] = vec4(GetFog(finalColor, fogFactor), 1.0);
+        gl_FragData[0] = vec4(GetFog(vVertexLight * diffColor.rgb, fogFactor), 1.0);
         gl_FragData[1] = fogFactor * vec4(diffColor.rgb, specIntensity);
         gl_FragData[2] = vec4(normal * 0.5 + 0.5, specPower);
         gl_FragData[3] = vec4(EncodeDepth(vWorldPos.w), 0.0);
     #else
         // Ambient & per-vertex lighting
         vec3 finalColor = vVertexLight * diffColor.rgb;
-        #ifdef AO
-            // If using AO, the vertex light ambient is black, calculate occluded ambient here
-            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * cAmbientColor.rgb * diffColor.rgb;
-        #endif
-        
+
         #ifdef MATERIAL
             // Add light pre-pass accumulation result
             // Lights are accumulated at half intensity. Bring back to full intensity now
@@ -252,18 +292,6 @@ void PS()
             vec3 lightSpecColor = lightInput.a * lightInput.rgb / max(GetIntensity(lightInput.rgb), 0.001);
 
             finalColor += lightInput.rgb * diffColor.rgb + lightSpecColor * specColor;
-        #endif
-
-        #ifdef ENVCUBEMAP
-            finalColor += cMatEnvMapColor * textureCube(sEnvCubeMap, reflect(vReflectionVec, normal)).rgb;
-        #endif
-        #ifdef LIGHTMAP
-            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
-        #endif
-        #ifdef EMISSIVEMAP
-            finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
-        #else
-            finalColor += cMatEmissiveColor;
         #endif
 
         gl_FragColor = vec4(GetFog(finalColor, fogFactor), diffColor.a);

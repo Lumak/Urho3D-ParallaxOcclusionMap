@@ -87,7 +87,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="11">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/BricksNormal.xml" />
 				</component>
 			</node>
@@ -118,7 +118,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="13">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/BricksParallaxOffset.xml" />
 				</component>
 			</node>
@@ -149,7 +149,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="15">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/BricksParallaxOcclusion.xml" />
 				</component>
 			</node>
@@ -189,7 +189,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="19">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/StonesNormal.xml" />
 				</component>
 			</node>
@@ -220,7 +220,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="21">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/StonesParallaxOffset.xml" />
 				</component>
 			</node>
@@ -251,7 +251,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="23">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/StonesParallaxOcclusion.xml" />
 				</component>
 			</node>
@@ -291,7 +291,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="27">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/FourNormal.xml" />
 				</component>
 			</node>
@@ -322,7 +322,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="29">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/FourParallaxOffset.xml" />
 				</component>
 			</node>
@@ -353,7 +353,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="31">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/FourParallaxOcclusion.xml" />
 				</component>
 			</node>
@@ -393,7 +393,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="35">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/RocksNormal.xml" />
 				</component>
 			</node>
@@ -424,7 +424,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="37">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/RocksParallaxOffset.xml" />
 				</component>
 			</node>
@@ -455,7 +455,7 @@
 				<attribute name="Scale" value="4 1 4" />
 				<attribute name="Variables" />
 				<component type="StaticModel" id="39">
-					<attribute name="Model" value="Model;Models/Plane.mdl" />
+					<attribute name="Model" value="Model;Models/PlaneTangent.mdl" />
 					<attribute name="Material" value="Material;Materials/RocksParallaxOcclusion.xml" />
 				</component>
 			</node>

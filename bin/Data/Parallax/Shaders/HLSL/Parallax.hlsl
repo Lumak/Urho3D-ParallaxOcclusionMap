@@ -27,8 +27,8 @@ float2 ParallaxOffsetLimit(sampler2D depthMap, float2 texCoords, float3 viewDir)
 #ifdef PARALLAX_OCCLUSION
 float2 ParallaxOcclusionMapping(sampler2D depthMap, float2 texCoords, float3 viewDir, float VdotN)
 {
-    const float minLayers = 8;
-    const float maxLayers = 36;
+    const float minLayers = 8.0;
+    const float maxLayers = 36.0;
 
     // the amount to shift the texture coordinates per layer (from vector P)
     float2 vParallaxDirection = normalize(viewDir.xy);
